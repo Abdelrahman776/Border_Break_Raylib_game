@@ -11,47 +11,182 @@ typedef struct Sprite
     Vector2 vel;
 } Sprite;
 
+// Check if player passes through the win hole
+bool check_win_condition(Sprite *player, Vector4 winhole)
+{
+    // Calculate player center
+    float playerCenterX = player->dest_rect.x + player->dest_rect.width / 2.0f;
+    float playerCenterY = player->dest_rect.y + player->dest_rect.height / 2.0f;
+
+    // After studying draw_winhole, I see that winhole is a Vector4 where:
+    // x,y = startpoint coordinates
+    // z,w = endpoint coordinates
+
+    // Determine if the win hole is horizontal or vertical by checking if its on a border
+    // For horizontal (top or bottom borders)
+    if ((winhole.y == 0 && winhole.w == 0) ||
+        (winhole.y == GetScreenHeight() && winhole.w == GetScreenHeight()))
+    {
+        // Hole is on top or bottom edge
+        // Check if player is between the X range of the hole
+        bool inXRange = (playerCenterX >= fmin(winhole.x, winhole.z) &&
+                         playerCenterX <= fmax(winhole.x, winhole.z));
+
+        // Check if player is at the edge where the hole is
+        if (winhole.y == 0) // Top edge
+        {
+            // Player is touching top edge
+            return inXRange && (player->dest_rect.y <= 10.0f);
+        }
+        else // Bottom edge
+        {
+            // Player is touching bottom edge
+            return inXRange && (player->dest_rect.y + player->dest_rect.height >= GetScreenHeight() - 10.0f);
+        }
+    }
+    // For vertical holes (left or right borders)
+    else if ((winhole.x == 0 && winhole.z == 0) ||
+             (winhole.x == GetScreenWidth() && winhole.z == GetScreenWidth()))
+    {
+        // Hole is on left or right edge
+        // Check if player is between the Y range of the hole
+        bool inYRange = (playerCenterY >= fmin(winhole.y, winhole.w) &&
+                         playerCenterY <= fmax(winhole.y, winhole.w));
+
+        // Check if player is at the edge where the hole is
+        if (winhole.x == 0) // Left edge
+        {
+            // Player is touching left edge
+            return inYRange && (player->dest_rect.x <= 10.0f);
+        }
+        else // Right edge
+        {
+            // Player is touching right edge
+            return inYRange && (player->dest_rect.x + player->dest_rect.width >= GetScreenWidth() - 10.0f);
+        }
+    }
+
+    return false;
+}
+
 // void apply_velocity_nocol(Sprite *player)
 // {
 //     player->dest_rect.x += player->vel.x * GetFrameTime();
 //     player->dest_rect.y += player->vel.y * GetFrameTime();
 // }
 
-void apply_velocity(Sprite *player)
+void apply_velocity(Sprite *player, Vector4 winhole, bool *gameWon)
 {
+    // Get current position before movement
+    float prevX = player->dest_rect.x;
+    float prevY = player->dest_rect.y;
 
     // GetFrameTime() to have consistent movement rate whenever we have varying frame rates in game
     // apply velocity with frame time
     player->dest_rect.x += player->vel.x * GetFrameTime();
     player->dest_rect.y += player->vel.y * GetFrameTime();
 
-    // Border collision checks
-    if (player->dest_rect.x <= 0)
+    // Get player bounds
+    float playerLeft = player->dest_rect.x;
+    float playerRight = player->dest_rect.x + player->dest_rect.width;
+    float playerTop = player->dest_rect.y;
+    float playerBottom = player->dest_rect.y + player->dest_rect.height;
+
+    // Check if player is passing through the win hole
+    bool passingThroughHole = false;
+
+    // For horizontal holes (top or bottom borders)
+    if ((winhole.y == 0 && winhole.w == 0) ||
+        (winhole.y == GetScreenHeight() && winhole.w == GetScreenHeight()))
     {
-        player->dest_rect.x = 0;
-        player->vel.x *= -0.9f; // Bounce with some energy loss
+        // Hole is on top or bottom edge
+        float holeLeft = fmin(winhole.x, winhole.z);
+        float holeRight = fmax(winhole.x, winhole.z);
+
+        // Check if player's horizontal position overlaps with hole
+        if (playerRight >= holeLeft && playerLeft <= holeRight)
+        {
+            // Check if player is crossing top or bottom border
+            if ((winhole.y == 0 && playerTop <= 0) ||
+                (winhole.y == GetScreenHeight() && playerBottom >= GetScreenHeight()))
+            {
+                passingThroughHole = true;
+
+                // If this is the first time passing through, set game as won
+                if (!(*gameWon))
+                {
+                    *gameWon = true;
+                }
+            }
+        }
     }
-    if (player->dest_rect.x + player->dest_rect.width >= GetScreenWidth())
+    // For vertical holes (left or right borders)
+    else if ((winhole.x == 0 && winhole.z == 0) ||
+             (winhole.x == GetScreenWidth() && winhole.z == GetScreenWidth()))
     {
-        player->dest_rect.x = GetScreenWidth() - player->dest_rect.width;
-        player->vel.x *= -0.9f;
-    }
-    if (player->dest_rect.y <= 0)
-    {
-        player->dest_rect.y = 0;
-        player->vel.y *= -0.9f;
-    }
-    if (player->dest_rect.y + player->dest_rect.height >= GetScreenHeight())
-    {
-        player->dest_rect.y = GetScreenHeight() - player->dest_rect.height;
-        player->vel.y *= -0.9f;
+        // Hole is on left or right edge
+        float holeTop = fmin(winhole.y, winhole.w);
+        float holeBottom = fmax(winhole.y, winhole.w);
+
+        // Check if player's vertical position overlaps with hole
+        if (playerBottom >= holeTop && playerTop <= holeBottom)
+        {
+            // Check if player is crossing left or right border
+            if ((winhole.x == 0 && playerLeft <= 0) ||
+                (winhole.x == GetScreenWidth() && playerRight >= GetScreenWidth()))
+            {
+                passingThroughHole = true;
+
+                // If this is the first time passing through, set game as won
+                if (!(*gameWon))
+                {
+                    *gameWon = true;
+                }
+            }
+        }
     }
 
-    // apply friction as enerygy loss
-    player->vel.x = (player->vel.x) - (player->vel.x * 0.0001f); // when it becomes zero it doesn't turn direction
+    // If not passing through hole, apply normal border collisions
+    if (!passingThroughHole)
+    {
+        // Border collision checks
+        if (player->dest_rect.x <= 0)
+        {
+            player->dest_rect.x = 0;
+            player->vel.x *= -0.9f; // Bounce with some energy loss
+        }
+        if (player->dest_rect.x + player->dest_rect.width >= GetScreenWidth())
+        {
+            player->dest_rect.x = GetScreenWidth() - player->dest_rect.width;
+            player->vel.x *= -0.9f;
+        }
+        if (player->dest_rect.y <= 0)
+        {
+            player->dest_rect.y = 0;
+            player->vel.y *= -0.9f;
+        }
+        if (player->dest_rect.y + player->dest_rect.height >= GetScreenHeight())
+        {
+            player->dest_rect.y = GetScreenHeight() - player->dest_rect.height;
+            player->vel.y *= -0.9f;
+        }
+    }
+    // If player has completely moved off screen, respawn in center
+    else if (playerRight < 0 || playerLeft > GetScreenWidth() ||
+             playerBottom < 0 || playerTop > GetScreenHeight())
+    {
+        // Player has completely exited - respawn in center with new random velocity 
+        //no player dissapear
+        // player->dest_rect.x = GetScreenWidth() / 2.0f - player->dest_rect.width / 2.0f;
+        // player->dest_rect.y = GetScreenHeight() / 2.0f - player->dest_rect.height / 2.0f;
+        player->vel.x =  0; 
+        player->vel.y =  0;
+    }
+
+    // Apply friction as energy loss
+    player->vel.x = (player->vel.x) - (player->vel.x * 0.0001f);
     player->vel.y = (player->vel.y) - (player->vel.y * 0.0001f);
 }
-
 void move_player(Sprite *player)
 {
     // player->vel.x = 0.0;
@@ -140,7 +275,7 @@ Vector4 draw_winhole()
     float randborderx = (rand() % (GetScreenWidth() - 200)) + 100;
     float randbordery = (rand() % (GetScreenHeight() - 200)) + 100;
 
-    int hole_length = 266; // 110% of sprite width 60
+    int hole_length = 70; // 110% of sprite width 60
 
     Vector2 startpoint;
     Vector2 endpoint;
@@ -184,114 +319,153 @@ Vector4 draw_winhole()
 
 int main()
 {
-    const int WindowX = 900;
+    const int WindowX = 1800;
     const int WindowY = 900;
-    InitWindow(WindowX, WindowY, "Bouncy ball game"); // initialize the application
+    InitWindow(WindowX, WindowY, "Bouncy ball in the hole game"); // initialize the application
+    SetTargetFPS(60);
 
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
     Texture2D angry_ball_texture = LoadTexture("assets/balls/blue/angry.png");
+    Texture2D tansparent_texture = LoadTexture("assets/balls/blue/transparent.png");
 
     Sprite player = {
         smile_ball_texture,
         {
-            WindowX / 2.0f - player.dest_rect.width / 2.0f,
-            WindowY / 2.0f - player.dest_rect.height / 2.0f,
+            WindowX / 2.0f - 30.0f, // Properly center based on width (60.0)
+            WindowY / 2.0f - 30.0f, // Properly center based on height (60.0)
             60.0,
             60.0,
         }};
 
     // Random initial velocity between -200 to 200 for x and y
+    srand(time(NULL)); // Seed the random number generator
     player.vel.x = (rand() % 401) - 200;
     player.vel.y = (rand() % 401) - 200;
+
     bool winhole_drawn = false;
     Vector4 winhole = {};
     const char *msg = "YOU WON!";
+    const char *restart_msg = "Press SPACE to restart";
     const int fontsize = 80;
+    const int small_fontsize = 30;
     const int msgwidth = MeasureText(msg, fontsize);
+    const int restart_width = MeasureText(restart_msg, small_fontsize);
+    bool gamewon = false;
+    bool showWinMessage = false;
+    float winMessageTimer = 0.0f;
+    const float winMessageDuration = 2.0f;
+     // Show win message for 2 seconds
 
-    bool gameend = false;
+    bool t = false;
+
     while (!WindowShouldClose()) // run app
     {
-
-        // SetTargetFPS(60)  ;
-        move_player(&player);
-        move_by_mouse(&player);
-        apply_velocity(&player);
-
         BeginDrawing();
         ClearBackground(WHITE);
+
+        // Process movement - even if game is won, we still allow movement for pass-through
+        move_player(&player);
+        move_by_mouse(&player);
+
+        // Apply velocity with the updated function that checks for passing through hole
+        apply_velocity(&player, winhole, &gamewon);
+
+        // If game was just won, start showing win message
+        if (gamewon && !showWinMessage)
+        {
+            showWinMessage = true;
+            winMessageTimer = 0.0f;
+            t = gamewon;
+
+           
+            player.texture = tansparent_texture;
+        }
+        
+        // Update timer for win message
+        if (showWinMessage)
+        {
+            winMessageTimer += GetFrameTime();
+            if (winMessageTimer >= winMessageDuration)
+            {
+                // After duration, keep showing message only if player is still on screen
+                if (player.dest_rect.x > -player.dest_rect.width &&
+                    player.dest_rect.x < WindowX &&
+                    player.dest_rect.y > -player.dest_rect.height &&
+                    player.dest_rect.y < WindowY)
+                {
+                    showWinMessage = true;
+                }
+                else
+                {
+                    showWinMessage = false;
+                }
+            }
+        }
+
+        // Update player texture based on position
+        player.texture = smile_ball_texture;
+        if (player.dest_rect.x <= 20 || player.dest_rect.x + player.dest_rect.width >= WindowX - 20 ||
+            player.dest_rect.y <= 20 || player.dest_rect.y + player.dest_rect.height >= WindowY - 20)
+        {
+            player.texture = angry_ball_texture;
+        }
+
         // Draw border lines
         DrawLineEx({0, 0}, {(float)WindowX, 0}, 20, RED);                           // Top
         DrawLineEx({0, 0}, {0, (float)WindowY}, 20, RED);                           // Left
         DrawLineEx({(float)WindowX, 0}, {(float)WindowX, (float)WindowY}, 20, RED); // Right
         DrawLineEx({0, (float)WindowY}, {(float)WindowX, (float)WindowY}, 20, RED); // Bottom
 
-        // drawing winning hole
-
+        // Drawing winning hole
         if (!winhole_drawn)
         {
             winhole = draw_winhole();
             winhole_drawn = true;
         }
-        DrawLineEx({winhole.w, winhole.x}, {winhole.y, winhole.z}, 20, BLUE);
+        DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, BLUE);
 
-        player.texture = smile_ball_texture;
-        // hitting the borders
-        if (player.dest_rect.x <= 20 || player.dest_rect.x + player.dest_rect.width >= WindowX - 20 || player.dest_rect.y <= 20 || player.dest_rect.y + player.dest_rect.height >= WindowY - 20)
+        // Display win message if needed
+        if (showWinMessage)
         {
-            player.texture = angry_ball_texture;
+            DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
+
+            DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+            // // Only show restart message if player is still on screen
+            // if (player.dest_rect.x > -player.dest_rect.width &&
+            //     player.dest_rect.x < WindowX &&
+            //     player.dest_rect.y > -player.dest_rect.height &&
+            //     player.dest_rect.y < WindowY)
+            // {
+            //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+            // }
         }
 
-        // ////////////////////////wining conditionals///////////////////////////////////////////////////////////
-
-        // Check if winhole is horizontal (y coordinates are same)
-        if (winhole.x == winhole.z)
+        // Handle restart with space key
+        if (IsKeyPressed(KEY_SPACE))
         {
-            // Horizontal line collision - check if sprite is fully within hole width
-            if ((player.dest_rect.x >= winhole.w) &&
-                (player.dest_rect.x + player.dest_rect.width <= winhole.y) &&
-                (player.dest_rect.y + player.dest_rect.height >= winhole.x - 10) &&
-                (player.dest_rect.y <= winhole.x + 10))
-            {
-
-                DrawText(msg, ((WindowX - msgwidth) / 2), (WindowY / 2) - 100, fontsize, BLACK);
-                // gameend = true;
-            }
-        }
-        // Check if winhole is vertical (x coordinates are same)
-        else if (winhole.w == winhole.y)
-        {
-            // Vertical line collision - check if sprite is fully within hole height
-            if ((player.dest_rect.y >= winhole.x) &&
-                (player.dest_rect.y + player.dest_rect.height <= winhole.z) &&
-                (player.dest_rect.x + player.dest_rect.width >= winhole.w - 10) &&
-                (player.dest_rect.x <= winhole.w + 10))
-            {
-
-                DrawText(msg, ((WindowX - msgwidth) / 2), (WindowY / 2) - 100, fontsize, BLACK);
-                // gameend = true;
-            }
-        }
-        if (IsKeyDown(KEY_SPACE))
-        {
-            // player.vel.x = 0;
-            // player.vel.y = 0;
+            // Reset the game
             player.vel.x = (rand() % 401) - 200; // random from -200 to 200
             player.vel.y = (rand() % 401) - 200;
-            player.dest_rect.x = WindowX / 2.0f - player.dest_rect.width / 2.0f;
-            player.dest_rect.y = WindowY / 2.0f - player.dest_rect.height / 2.0f;
+            player.dest_rect.x = WindowX / 2.0f - 30.0f;
+            player.dest_rect.y = WindowY / 2.0f - 30.0f;
 
-            
+            // Reset game state
+            gamewon = false;
+            showWinMessage = false;
+            winhole_drawn = false;
         }
-         
 
-       
-        DrawTexturePro(player.texture, {0.0, 0.0, (float)player.texture.width, (float)player.texture.height}, player.dest_rect, {0, 0}, 0, RAYWHITE);
+        // Draw the player
+        DrawTexturePro(player.texture,
+                       {0.0, 0.0, (float)player.texture.width, (float)player.texture.height},
+                       player.dest_rect, {0, 0}, 0, RAYWHITE);
 
         EndDrawing();
     }
+
     UnloadTexture(smile_ball_texture);
     UnloadTexture(angry_ball_texture);
+    UnloadTexture(tansparent_texture);
     CloseWindow(); // close app
 
     return 0;
