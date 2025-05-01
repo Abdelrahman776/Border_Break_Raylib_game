@@ -320,8 +320,8 @@ Vector4 draw_winhole()
 int main()
 {
     const int WindowX = 1800;
-    const int WindowY = 900;
-    InitWindow(WindowX, WindowY, "Bouncy ball in the hole game"); // initialize the application
+    const int WindowY = 900;                                          // Border Break
+    InitWindow(WindowX, WindowY, "Bouncy ball Escape the hole game"); // initialize the application
     SetTargetFPS(60);
 
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
