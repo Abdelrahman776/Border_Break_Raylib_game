@@ -26,22 +26,16 @@ void move_player(Sprite *player)
     {
         player->vel.x = -100.0;
         player->vel.y = 0;
-
-        // player->dest_rect.x -= 100.0 * GetFrameTime();
     }
     if (IsKeyDown(KEY_UP))
     {
         player->vel.y = -100.0;
         player->vel.x = 0;
-
-        // player->dest_rect.y -= 100.0 * GetFrameTime();
     }
     if (IsKeyDown(KEY_DOWN))
     {
         player->vel.y = 100.0;
         player->vel.x = 0;
-
-        // player->dest_rect.y += 100.0 * GetFrameTime();
     }
 }
 
@@ -61,8 +55,8 @@ void move_by_mouse(Sprite *player)
         isDragging = true;
         mouseStartPos = mousePos;
         // Reset velocity when starting new swipe
-        player->vel.x = 0;
-        player->vel.y = 0;
+        // player->vel.x = 0;
+        // player->vel.y = 0;
     }
 
     // Track the swipe while dragging
@@ -104,20 +98,11 @@ void apply_velocity(Sprite *player)
     // GetFrameTime() to have consistent movement rate whenever we have varying frame rates in game
     player->dest_rect.x += player->vel.x * GetFrameTime();
     player->dest_rect.y += player->vel.y * GetFrameTime();
-
-    if (IsKeyDown(KEY_SPACE))
-    {
-        player->vel.x = 0;
-        player->vel.y = 0;
-
-        player->dest_rect.x = 450 - player->dest_rect.x / 2;
-        player->dest_rect.y = 450-player->dest_rect.y/2;
-    }
 }
 int main()
 {
-    const unsigned short WindowX = 900;
-    const unsigned short WindowY = 900;
+    const int WindowX = 900;
+    const int WindowY = 900;
     InitWindow(WindowX, WindowY, "Bouncy ball game"); // initialize the application
 
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
@@ -126,15 +111,15 @@ int main()
     Sprite player = {
         smile_ball_texture,
         {
-            450.0 - player.dest_rect.x / 2,
-            WindowY/2.0 - player.dest_rect.y / 2,
+            WindowX / 2.0f - player.dest_rect.width / 2.0f,
+            WindowY / 2.0f - player.dest_rect.height / 2.0f,
             60.0,
             60.0,
         }};
 
-    // Random initial velocity between 0 and 99
-    player.vel.x = rand() % 100;
-    player.vel.y = rand() % 100;
+    // Random initial velocity between -200 to 200 for x and y
+    player.vel.x = (rand() % 401) - 200; 
+    player.vel.y = (rand() % 401) - 200;
 
     while (!WindowShouldClose()) // run app
     {
@@ -143,16 +128,25 @@ int main()
         ClearBackground(WHITE);
         move_player(&player);
         move_by_mouse(&player);
-        DrawText(TextFormat("deltaX: %f , deltaY: %f ", GetMouseDelta().x, GetMouseDelta().y), 20, 20, 20, BLACK);
+        // DrawText(TextFormat("deltaX: %f , deltaY: %f ", GetMouseDelta().x, GetMouseDelta().y), 20, 20, 20, BLACK);
 
         // DrawText("It works!", 20, 20, 20, BLACK);
         // DrawTexture(ball_texture, 200.0, 10.0, WHITE);
         player.texture = smile_ball_texture;
-        if (player.dest_rect.x <= 0 || player.dest_rect.x + player.dest_rect.width >= 900 || player.dest_rect.y <= 0 || player.dest_rect.y + player.dest_rect.height >= 900)
+        if (player.dest_rect.x <= 0 || player.dest_rect.x + player.dest_rect.width >= WindowX || player.dest_rect.y <= 0 || player.dest_rect.y + player.dest_rect.height >= WindowY)
         {
             player.texture = angry_ball_texture;
         }
 
+        if (IsKeyDown(KEY_SPACE))
+        {
+            // player.vel.x = 0;
+            // player.vel.y = 0;
+            player.vel.x = (rand() % 401) - 200;//random from -200 to 200
+            player.vel.y = (rand() % 401) - 200;
+            player.dest_rect.x = WindowX / 2.0f - player.dest_rect.width / 2.0f;
+            player.dest_rect.y = WindowY / 2.0f - player.dest_rect.height / 2.0f;
+        }
         DrawTexturePro(player.texture, {0.0, 0.0, (float)player.texture.width, (float)player.texture.height}, player.dest_rect, {0, 0}, 0, RAYWHITE);
         EndDrawing();
     }
