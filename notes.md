@@ -40,3 +40,11 @@ DrawTexturePro(
 | `origin`       | Pivot point for rotation/scaling (here: top-left corner)                |
 | `rotation`     | Rotation angle (0 = no rotation)                                        |
 | `tint`         | Color filter (RAYWHITE = unchanged)                                     |
+
+
+
+
+// DrawText(TextFormat("deltaX: %f , deltaY: %f ", GetMouseDelta().x, GetMouseDelta().y), 20, 20, 20, BLACK);
+
+        // DrawText("It works!", 20, 20, 20, BLACK);
+        // DrawTexture(ball_texture, 200.0, 10.0, WHITE);
