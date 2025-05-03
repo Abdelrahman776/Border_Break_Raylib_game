@@ -4,16 +4,14 @@
 #include <math.h>
 // srand(time(NULL)); // Seed with current time
 
-typedef struct Sprite
-{
+typedef struct Sprite{
     Texture2D texture;
     Rectangle dest_rect;
     Vector2 vel;
 } Sprite;
 
 // Check if player passes through the win hole
-bool check_win_condition(Sprite *player, Vector4 winhole)
-{
+bool check_win_condition(Sprite *player, Vector4 winhole) {
     // Calculate player center
     float playerCenterX = player->dest_rect.x + player->dest_rect.width / 2.0f;
     float playerCenterY = player->dest_rect.y + player->dest_rect.height / 2.0f;
@@ -275,7 +273,7 @@ Vector4 draw_winhole()
     float randborderx = (rand() % (GetScreenWidth() - 200)) + 100;
     float randbordery = (rand() % (GetScreenHeight() - 200)) + 100;
 
-    int hole_length = 70; // 110% of sprite width 60
+    int hole_length = 66; // 110% of sprite width 60
 
     Vector2 startpoint;
     Vector2 endpoint;
@@ -319,6 +317,7 @@ Vector4 draw_winhole()
 
 int main()
 {
+    // SetConfigFlags(FLAG_FULLSCREEN_MODE);
     const int WindowX = 1800;
     const int WindowY = 900;                                          // Border Break
     InitWindow(WindowX, WindowY, "Bouncy ball Escape the hole game"); // initialize the application
@@ -327,6 +326,9 @@ int main()
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
     Texture2D angry_ball_texture = LoadTexture("assets/balls/blue/angry.png");
     Texture2D tansparent_texture = LoadTexture("assets/balls/blue/transparent.png");
+
+    Texture2D start_screen = LoadTexture("assets/start_screen.png");
+    Texture2D levels_screen = LoadTexture("assets/levels_screen.png");
 
     Sprite player = {
         smile_ball_texture,
@@ -353,15 +355,35 @@ int main()
     bool gamewon = false;
     bool showWinMessage = false;
     float winMessageTimer = 0.0f;
-    const float winMessageDuration = 2.0f;
+    const float winMessageDuration = 5.0f;
      // Show win message for 2 seconds
-
-    bool t = false;
+bool isstartscreen=true;
 
     while (!WindowShouldClose()) // run app
     {
         BeginDrawing();
         ClearBackground(WHITE);
+
+/////////////////////////////////////////////////
+
+DrawTexturePro(start_screen,
+            {0.0, 0.0, (float)start_screen.width, (float)start_screen.height},
+                      {200,100}, {0, 0}, 0, RAYWHITE); 
+
+        if(IsKeyDown(KEY_S)){
+            isstartscreen=false;
+        }
+
+
+
+
+
+
+
+
+
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////
 
         // Process movement - even if game is won, we still allow movement for pass-through
         move_player(&player);
@@ -375,7 +397,7 @@ int main()
         {
             showWinMessage = true;
             winMessageTimer = 0.0f;
-            t = gamewon;
+           
 
            
             player.texture = tansparent_texture;
@@ -466,6 +488,8 @@ int main()
     UnloadTexture(smile_ball_texture);
     UnloadTexture(angry_ball_texture);
     UnloadTexture(tansparent_texture);
+    UnloadTexture(start_screen);
+    UnloadTexture(levels_screen);
     CloseWindow(); // close app
 
     return 0;

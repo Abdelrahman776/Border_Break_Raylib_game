@@ -22,9 +22,29 @@ theme song and splash start  screen  ball behind him fire
 
 background image or pattern
 
-score based on number of collisions : score start from 100 and decrease with the no. of bounces
+score the calculated based on time and number oftouches the user performed,
+<!-- score based on number of collisions : score start from 100 and decrease with the no. of bounces -->shortest time and lowest touch
+counts gives higher score.
 
-
-2 different levels
+2 different levels  ❌
 
 the hole  placment is random each time.
+
+
+
+Sound effects related to ball collision and passing
+through.❌
+ Visual effects related to ball appearance and lighting❌
+effect
+
+
+
+fix hole big tolerance 
+
+One ball diameters according to complexity level
+
+
+
+
+Physical positioning of mobile affects the game
+appearance
