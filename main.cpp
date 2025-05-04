@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <time.h>
 #include <math.h>
+
 // srand(time(NULL)); // Seed with current time
+
 float gameStartTime = 0.0f;
 int touchCount = 0;
 bool scoreCalculated = false;
@@ -29,7 +31,6 @@ bool check_win_condition(Sprite *player, Vector4 winhole)
     // Calculate player center
     float playerCenterX = player->dest_rect.x + player->dest_rect.width / 2.0f;
     float playerCenterY = player->dest_rect.y + player->dest_rect.height / 2.0f;
-
     // After studying draw_winhole, I see that winhole is a Vector4 where:
     // x,y = startpoint coordinates
     // z,w = endpoint coordinates
@@ -80,19 +81,16 @@ bool check_win_condition(Sprite *player, Vector4 winhole)
 
     return false;
 }
-
 // void apply_velocity_nocol(Sprite *player)
 // {
 //     player->dest_rect.x += player->vel.x * GetFrameTime();
 //     player->dest_rect.y += player->vel.y * GetFrameTime();
 // }
-
 void apply_velocity(Sprite *player, Vector4 winhole, bool *gameWon)
 {
     // Get current position before movement
     float prevX = player->dest_rect.x;
     float prevY = player->dest_rect.y;
-
     // GetFrameTime() to have consistent movement rate whenever we have varying frame rates in game
     // apply velocity with frame time
     player->dest_rect.x += player->vel.x * GetFrameTime();
@@ -199,11 +197,9 @@ void apply_velocity(Sprite *player, Vector4 winhole, bool *gameWon)
     player->vel.x = (player->vel.x) - (player->vel.x * 0.0001f);
     player->vel.y = (player->vel.y) - (player->vel.y * 0.0001f);
 }
+
 void move_player(Sprite *player)
 {
-    // player->vel.x = 0.0;
-    // player->vel.y = 0.0;
-
     if (IsKeyPressed(KEY_RIGHT))
     {
         player->vel.x = 400.0;
@@ -235,7 +231,6 @@ void move_by_mouse(Sprite *player)
     static Vector2 mouseStartPos = {0.0f, 0.0f};
     static bool isDragging = false;
     Vector2 mousePos = GetMousePosition();
-
     // Check if mouse is clicked on the ball
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) &&
         (mousePos.x >= player->dest_rect.x - 10) &&
@@ -288,7 +283,6 @@ Vector4 draw_winhole(float hole_length)
 {
     bool randchoice = ((rand() % 2) == 0); // rand between 0 and 1
     bool randchoice1 = ((rand() % 2) == 0);
-
     float randborderx = (rand() % (GetScreenWidth() - 200)) + 100;
     float randbordery = (rand() % (GetScreenHeight() - 200)) + 100;
 
@@ -304,7 +298,6 @@ Vector4 draw_winhole(float hole_length)
 
         if (startpoint.y == 0)
         {
-
             endpoint.x = startpoint.x + hole_length;
             endpoint.y = 0;
         }
@@ -316,12 +309,10 @@ Vector4 draw_winhole(float hole_length)
     }
     else
     {
-
         startpoint = {randchoice1 * static_cast<float>(GetScreenWidth()), randbordery};
 
         if (startpoint.x == 0)
         {
-
             endpoint.x = 0;
             endpoint.y = startpoint.y + hole_length;
         }
@@ -339,16 +330,17 @@ int main()
 {
     // SetConfigFlags(FLAG_FULLSCREEN_MODE);
     const int WindowX = 1800;
-    const int WindowY = 900;                                          // Border Break
+    const int WindowY = 900; // Border Break
+
     InitWindow(WindowX, WindowY, "Bouncy ball Escape the hole game"); // initialize the application
     SetTargetFPS(60);
     InitAudioDevice();
+
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
     Texture2D angry_ball_texture = LoadTexture("assets/balls/blue/angry.png");
     Texture2D smile_ball_texture2 = LoadTexture("assets/balls/red/smile.png");
     Texture2D angry_ball_texture2 = LoadTexture("assets/balls/red/angry.png");
     Texture2D tansparent_texture = LoadTexture("assets/balls/blue/transparent.png");
-
     Texture2D start_screen = LoadTexture("assets/start_screen.png");
     Texture2D levels_screen = LoadTexture("assets/levels_screen.png");
     Texture2D background_screen = LoadTexture("assets/fire_land.jpg");
@@ -401,7 +393,6 @@ int main()
         }
         else if (currentScreen == SELECT_LEVEL_SCREEN)
         {
-
             PlayMusicStream(levels_screen_song);   // Play music once at start
             UpdateMusicStream(levels_screen_song); // Play music once at start
 
@@ -526,9 +517,7 @@ int main()
             // Display win message if needed
             if (showWinMessage)
             {
-
                 DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
-
                 DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
                 if (scoreCalculated)
                 {
@@ -539,16 +528,9 @@ int main()
                         40,
                         GOLD);
                 }
-
-                // // Only show restart message if player is still on screen
-                // if (player.dest_rect.x > -player.dest_rect.width &&
-                //     player.dest_rect.x < WindowX &&
-                //     player.dest_rect.y > -player.dest_rect.height &&
-                //     player.dest_rect.y < WindowY)
-                // {
-                //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
-                // }
             }
+            // Display score during the game
+            DrawText(TextFormat("Score: %d", finalScore), 20, 20, 30, BLACK);
 
             // Handle restart with space key
             if (IsKeyPressed(KEY_SPACE))
@@ -667,7 +649,6 @@ int main()
             // Display win message if needed
             if (showWinMessage)
             {
-
                 DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
 
                 DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, WHITE);
@@ -680,16 +661,9 @@ int main()
                         40,
                         GOLD);
                 }
-
-                // // Only show restart message if player is still on screen
-                // if (player.dest_rect.x > -player.dest_rect.width &&
-                //     player.dest_rect.x < WindowX &&
-                //     player.dest_rect.y > -player.dest_rect.height &&
-                //     player.dest_rect.y < WindowY)
-                // {
-                //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
-                // }
             }
+            // Display score during the game
+            DrawText(TextFormat("Score: %d", finalScore), 20, 20, 30, WHITE);
 
             // Handle restart with space key
             if (IsKeyPressed(KEY_SPACE))
