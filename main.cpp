@@ -4,14 +4,24 @@
 #include <math.h>
 // srand(time(NULL)); // Seed with current time
 
-typedef struct Sprite{
+typedef struct Sprite
+{
     Texture2D texture;
     Rectangle dest_rect;
     Vector2 vel;
 } Sprite;
 
+typedef enum GameScreen
+{
+    START_SCREEN = 0,
+    SELECT_LEVEL_SCREEN,
+    LEVEL1_SCREEN,
+    LEVEL2_SCREEN
+} GameScreen;
+
 // Check if player passes through the win hole
-bool check_win_condition(Sprite *player, Vector4 winhole) {
+bool check_win_condition(Sprite *player, Vector4 winhole)
+{
     // Calculate player center
     float playerCenterX = player->dest_rect.x + player->dest_rect.width / 2.0f;
     float playerCenterY = player->dest_rect.y + player->dest_rect.height / 2.0f;
@@ -173,12 +183,12 @@ void apply_velocity(Sprite *player, Vector4 winhole, bool *gameWon)
     else if (playerRight < 0 || playerLeft > GetScreenWidth() ||
              playerBottom < 0 || playerTop > GetScreenHeight())
     {
-        // Player has completely exited - respawn in center with new random velocity 
-        //no player dissapear
+        // Player has completely exited - respawn in center with new random velocity
+        // no player dissapear
         // player->dest_rect.x = GetScreenWidth() / 2.0f - player->dest_rect.width / 2.0f;
         // player->dest_rect.y = GetScreenHeight() / 2.0f - player->dest_rect.height / 2.0f;
-        player->vel.x =  0; 
-        player->vel.y =  0;
+        player->vel.x = 0;
+        player->vel.y = 0;
     }
 
     // Apply friction as energy loss
@@ -265,7 +275,7 @@ void move_by_mouse(Sprite *player)
     // apply_velocity(player);
 }
 
-Vector4 draw_winhole()
+Vector4 draw_winhole(float hole_length)
 {
     bool randchoice = ((rand() % 2) == 0); // rand between 0 and 1
     bool randchoice1 = ((rand() % 2) == 0);
@@ -273,7 +283,8 @@ Vector4 draw_winhole()
     float randborderx = (rand() % (GetScreenWidth() - 200)) + 100;
     float randbordery = (rand() % (GetScreenHeight() - 200)) + 100;
 
-    int hole_length = 66; // 110% of sprite width 60
+    // int hole_length = 66; // 110% of sprite width 60
+    hole_length = hole_length * 1.1;
 
     Vector2 startpoint;
     Vector2 endpoint;
@@ -322,13 +333,20 @@ int main()
     const int WindowY = 900;                                          // Border Break
     InitWindow(WindowX, WindowY, "Bouncy ball Escape the hole game"); // initialize the application
     SetTargetFPS(60);
-
+    InitAudioDevice();
     Texture2D smile_ball_texture = LoadTexture("assets/balls/blue/smile.png");
     Texture2D angry_ball_texture = LoadTexture("assets/balls/blue/angry.png");
+    Texture2D smile_ball_texture2 = LoadTexture("assets/balls/red/smile.png");
+    Texture2D angry_ball_texture2 = LoadTexture("assets/balls/red/angry.png");
     Texture2D tansparent_texture = LoadTexture("assets/balls/blue/transparent.png");
 
     Texture2D start_screen = LoadTexture("assets/start_screen.png");
     Texture2D levels_screen = LoadTexture("assets/levels_screen.png");
+    Texture2D background_screen = LoadTexture("assets/fire_land.jpg");
+    Music start_screen_song = LoadMusicStream("assets/sounds/start_screen_song.mp3");
+    Music levels_screen_song = LoadMusicStream("assets/sounds/fire_sound.mp3");
+    Sound hit_wall = LoadSound("assets/sounds/hit_wall.mp3");
+    Sound win_level = LoadSound("assets/sounds/win_level.mp3");
 
     Sprite player = {
         smile_ball_texture,
@@ -356,131 +374,284 @@ int main()
     bool showWinMessage = false;
     float winMessageTimer = 0.0f;
     const float winMessageDuration = 5.0f;
-     // Show win message for 2 seconds
-bool isstartscreen=true;
+    // Show win message for 2 seconds
+    GameScreen currentScreen = START_SCREEN;
+
+    PlayMusicStream(start_screen_song); // Play music once at start
 
     while (!WindowShouldClose()) // run app
     {
-        BeginDrawing();
-        ClearBackground(WHITE);
-
-/////////////////////////////////////////////////
-
-DrawTexturePro(start_screen,
-            {0.0, 0.0, (float)start_screen.width, (float)start_screen.height},
-                      {200,100}, {0, 0}, 0, RAYWHITE); 
-
-        if(IsKeyDown(KEY_S)){
-            isstartscreen=false;
-        }
-
-
-
-
-
-
-
-
-
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-        // Process movement - even if game is won, we still allow movement for pass-through
-        move_player(&player);
-        move_by_mouse(&player);
-
-        // Apply velocity with the updated function that checks for passing through hole
-        apply_velocity(&player, winhole, &gamewon);
-
-        // If game was just won, start showing win message
-        if (gamewon && !showWinMessage)
+        if (currentScreen == START_SCREEN)
         {
-            showWinMessage = true;
-            winMessageTimer = 0.0f;
-           
-
-           
-            player.texture = tansparent_texture;
-        }
-        
-        // Update timer for win message
-        if (showWinMessage)
-        {
-            winMessageTimer += GetFrameTime();
-            if (winMessageTimer >= winMessageDuration)
+            UpdateMusicStream(start_screen_song); // Only update the stream
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON))
             {
-                // After duration, keep showing message only if player is still on screen
-                if (player.dest_rect.x > -player.dest_rect.width &&
-                    player.dest_rect.x < WindowX &&
-                    player.dest_rect.y > -player.dest_rect.height &&
-                    player.dest_rect.y < WindowY)
-                {
-                    showWinMessage = true;
-                }
-                else
-                {
-                    showWinMessage = false;
-                }
+                StopMusicStream(start_screen_song); // Stop music when leaving start screen
+                currentScreen = SELECT_LEVEL_SCREEN;
             }
         }
-
-        // Update player texture based on position
-        player.texture = smile_ball_texture;
-        if (player.dest_rect.x <= 20 || player.dest_rect.x + player.dest_rect.width >= WindowX - 20 ||
-            player.dest_rect.y <= 20 || player.dest_rect.y + player.dest_rect.height >= WindowY - 20)
+        else if (currentScreen == SELECT_LEVEL_SCREEN)
         {
-            player.texture = angry_ball_texture;
+
+            PlayMusicStream(levels_screen_song);   // Play music once at start
+            UpdateMusicStream(levels_screen_song); // Play music once at start
+
+            if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (GetMousePosition().x <= GetScreenWidth() / 2))
+            {
+                StopMusicStream(levels_screen_song); // Stop music when leaving levels screen
+
+                currentScreen = LEVEL1_SCREEN;
+            }
+            else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (GetMousePosition().x >= GetScreenWidth() / 2))
+
+            {
+                StopMusicStream(levels_screen_song); // Stop music when leaving levels screen
+                currentScreen = LEVEL2_SCREEN;
+            }
+        }
+        else if ((currentScreen == LEVEL1_SCREEN || currentScreen == LEVEL2_SCREEN) && IsKeyPressed(KEY_ENTER))
+        {
+            break; // Exit when ENTER pressed on a level screen
         }
 
-        // Draw border lines
-        DrawLineEx({0, 0}, {(float)WindowX, 0}, 20, RED);                           // Top
-        DrawLineEx({0, 0}, {0, (float)WindowY}, 20, RED);                           // Left
-        DrawLineEx({(float)WindowX, 0}, {(float)WindowX, (float)WindowY}, 20, RED); // Right
-        DrawLineEx({0, (float)WindowY}, {(float)WindowX, (float)WindowY}, 20, RED); // Bottom
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
 
-        // Drawing winning hole
-        if (!winhole_drawn)
+        switch (currentScreen)
         {
-            winhole = draw_winhole();
-            winhole_drawn = true;
+        case START_SCREEN:
+            DrawTexture(start_screen, 0, 0, RAYWHITE);
+
+            break;
+
+        case SELECT_LEVEL_SCREEN:
+            // DRAW_FULLSCREEN(selectLevelImage);
+            DrawTexture(levels_screen, 0, 0, RAYWHITE);
+            break;
+
+        case LEVEL1_SCREEN:
+            // DRAW_FULLSCREEN(lvl1Image);
+            DrawText("LEVEL 1",
+                     GetScreenWidth() / 2 - MeasureText("LEVEL 1", 20) / 2,
+                     GetScreenHeight() - 40, 20, DARKBLUE);
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            // Process movement - even if game is won, we still allow movement for pass-through
+            move_player(&player);
+            move_by_mouse(&player);
+
+            // Apply velocity with the updated function that checks for passing through hole
+            apply_velocity(&player, winhole, &gamewon);
+
+            // If game was just won, start showing win message
+            if (gamewon && !showWinMessage)
+            {
+                showWinMessage = true;
+                winMessageTimer = 0.0f;
+                PlaySound(win_level); // Add this line here
+                player.texture = tansparent_texture;
+            }
+
+            // Update timer for win message
+            if (showWinMessage)
+            {
+                winMessageTimer += GetFrameTime();
+                if (winMessageTimer >= winMessageDuration)
+                {
+                    // After duration, keep showing message only if player is still on screen
+                    if (player.dest_rect.x > -player.dest_rect.width &&
+                        player.dest_rect.x < WindowX &&
+                        player.dest_rect.y > -player.dest_rect.height &&
+                        player.dest_rect.y < WindowY)
+                    {
+                        showWinMessage = true;
+                    }
+                    else
+                    {
+                        showWinMessage = false;
+                    }
+                }
+            }
+
+            // Update player texture based on position
+            player.texture = smile_ball_texture;
+            if (player.dest_rect.x <= 20 || player.dest_rect.x + player.dest_rect.width >= WindowX - 20 ||
+                player.dest_rect.y <= 20 || player.dest_rect.y + player.dest_rect.height >= WindowY - 20)
+            {
+                PlaySound(hit_wall);
+                player.texture = angry_ball_texture;
+            }
+
+            // Draw border lines
+            DrawLineEx({0, 0}, {(float)WindowX, 0}, 20, RED);                           // Top
+            DrawLineEx({0, 0}, {0, (float)WindowY}, 20, RED);                           // Left
+            DrawLineEx({(float)WindowX, 0}, {(float)WindowX, (float)WindowY}, 20, RED); // Right
+            DrawLineEx({0, (float)WindowY}, {(float)WindowX, (float)WindowY}, 20, RED); // Bottom
+
+            // Drawing winning hole
+            if (!winhole_drawn)
+            {
+                winhole = draw_winhole(player.dest_rect.height);
+                winhole_drawn = true;
+            }
+            DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, BLUE);
+
+            // Display win message if needed
+            if (showWinMessage)
+            {
+
+                DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
+
+                DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+
+                // // Only show restart message if player is still on screen
+                // if (player.dest_rect.x > -player.dest_rect.width &&
+                //     player.dest_rect.x < WindowX &&
+                //     player.dest_rect.y > -player.dest_rect.height &&
+                //     player.dest_rect.y < WindowY)
+                // {
+                //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+                // }
+            }
+
+            // Handle restart with space key
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                // Reset the game
+                player.vel.x = (rand() % 401) - 200; // random from -200 to 200
+                player.vel.y = (rand() % 401) - 200;
+                player.dest_rect.x = WindowX / 2.0f - 30.0f;
+                player.dest_rect.y = WindowY / 2.0f - 30.0f;
+
+                // Reset game state
+                gamewon = false;
+                showWinMessage = false;
+                winhole_drawn = false;
+            }
+
+            // Draw the player
+            DrawTexturePro(player.texture,
+                           {0.0, 0.0, (float)player.texture.width, (float)player.texture.height},
+                           player.dest_rect, {0, 0}, 0, RAYWHITE);
+
+            ////////////////////////////////////////////////////////////////////////////////
+            break;
+
+        case LEVEL2_SCREEN:
+            // DRAW_FULLSCREEN(lvl2Image);
+            DrawText("LEVEL 2",
+                     GetScreenWidth() / 2 - MeasureText("LEVEL 2", 20) / 2,
+                     GetScreenHeight() - 40, 20, DARKGREEN);
+            ClearBackground(BLACK);
+
+            DrawTexture(background_screen, 0, 0, RAYWHITE);
+            player.texture = smile_ball_texture2;
+            player.dest_rect.width = 30.0f;
+            player.dest_rect.height = 30.0f;
+
+            //////////////////////////////////////////////////////////////////////////////////////////////////////
+
+            // Process movement - even if game is won, we still allow movement for pass-through
+            move_player(&player);
+            move_by_mouse(&player);
+
+            // Apply velocity with the updated function that checks for passing through hole
+            apply_velocity(&player, winhole, &gamewon);
+
+            // If game was just won, start showing win message
+            if (gamewon && !showWinMessage)
+            {
+                showWinMessage = true;
+                winMessageTimer = 0.0f;
+                PlaySound(win_level); // Add this line here
+                player.texture = tansparent_texture;
+            }
+
+            // Update timer for win message
+            if (showWinMessage)
+            {
+                winMessageTimer += GetFrameTime();
+                if (winMessageTimer >= winMessageDuration)
+                {
+                    // After duration, keep showing message only if player is still on screen
+                    if (player.dest_rect.x > -player.dest_rect.width &&
+                        player.dest_rect.x < WindowX &&
+                        player.dest_rect.y > -player.dest_rect.height &&
+                        player.dest_rect.y < WindowY)
+                    {
+                        showWinMessage = true;
+                    }
+                    else
+                    {
+                        showWinMessage = false;
+                    }
+                }
+            }
+
+            // Update player texture based on position
+            // player.texture = smile_ball_texture2;
+            if (player.dest_rect.x <= 20 || player.dest_rect.x + player.dest_rect.width >= WindowX - 20 ||
+                player.dest_rect.y <= 20 || player.dest_rect.y + player.dest_rect.height >= WindowY - 20)
+            {
+                PlaySound(hit_wall);
+                player.texture = angry_ball_texture2;
+            }
+
+            // Draw border lines
+            DrawLineEx({0, 0}, {(float)WindowX, 0}, 20, BLUE);                           // Top
+            DrawLineEx({0, 0}, {0, (float)WindowY}, 20, BLUE);                           // Left
+            DrawLineEx({(float)WindowX, 0}, {(float)WindowX, (float)WindowY}, 20, BLUE); // Right
+            DrawLineEx({0, (float)WindowY}, {(float)WindowX, (float)WindowY}, 20, BLUE); // Bottom
+
+            // Drawing winning hole
+            if (!winhole_drawn)
+            {
+                winhole = draw_winhole(player.dest_rect.height);
+                winhole_drawn = true;
+            }
+            DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, RED);
+
+            // Display win message if needed
+            if (showWinMessage)
+            {
+
+                DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
+
+                DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, WHITE);
+
+                // // Only show restart message if player is still on screen
+                // if (player.dest_rect.x > -player.dest_rect.width &&
+                //     player.dest_rect.x < WindowX &&
+                //     player.dest_rect.y > -player.dest_rect.height &&
+                //     player.dest_rect.y < WindowY)
+                // {
+                //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+                // }
+            }
+
+            // Handle restart with space key
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                // Reset the game
+                player.vel.x = (rand() % 401) - 200; // random from -200 to 200
+                player.vel.y = (rand() % 401) - 200;
+                player.dest_rect.x = WindowX / 2.0f - 30.0f;
+                player.dest_rect.y = WindowY / 2.0f - 30.0f;
+
+                // Reset game state
+                gamewon = false;
+                showWinMessage = false;
+                winhole_drawn = false;
+            }
+
+            // Draw the player
+            DrawTexturePro(player.texture,
+                           {0.0, 0.0, (float)player.texture.width, (float)player.texture.height},
+                           player.dest_rect, {0, 0}, 0, RAYWHITE);
+
+            ////////////////////////////////////////////////////////////////////////////////
+            break;
         }
-        DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, BLUE);
-
-        // Display win message if needed
-        if (showWinMessage)
-        {
-            DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
-
-            DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
-            // // Only show restart message if player is still on screen
-            // if (player.dest_rect.x > -player.dest_rect.width &&
-            //     player.dest_rect.x < WindowX &&
-            //     player.dest_rect.y > -player.dest_rect.height &&
-            //     player.dest_rect.y < WindowY)
-            // {
-            //     DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
-            // }
-        }
-
-        // Handle restart with space key
-        if (IsKeyPressed(KEY_SPACE))
-        {
-            // Reset the game
-            player.vel.x = (rand() % 401) - 200; // random from -200 to 200
-            player.vel.y = (rand() % 401) - 200;
-            player.dest_rect.x = WindowX / 2.0f - 30.0f;
-            player.dest_rect.y = WindowY / 2.0f - 30.0f;
-
-            // Reset game state
-            gamewon = false;
-            showWinMessage = false;
-            winhole_drawn = false;
-        }
-
-        // Draw the player
-        DrawTexturePro(player.texture,
-                       {0.0, 0.0, (float)player.texture.width, (float)player.texture.height},
-                       player.dest_rect, {0, 0}, 0, RAYWHITE);
 
         EndDrawing();
     }
@@ -490,6 +661,12 @@ DrawTexturePro(start_screen,
     UnloadTexture(tansparent_texture);
     UnloadTexture(start_screen);
     UnloadTexture(levels_screen);
+    CloseAudioDevice();
+    StopMusicStream(start_screen_song);
+    UnloadMusicStream(start_screen_song);
+    UnloadSound(hit_wall);
+    UnloadSound(win_level);
+
     CloseWindow(); // close app
 
     return 0;
