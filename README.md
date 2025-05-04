@@ -1,47 +1,41 @@
+```markdown
+# Border Break Game
 
+Help our little ball escape the fiery room and reach the cold freedom outside!
 
-# Border Break  Game
-![alt text](image-1.png)
-![alt text](image.png)
+## Screenshots
 
-a game made using C++ and Raylib library
+![Gameplay Image 1](image-2.png)
+![Gameplay Image 2](image-3.png)
+![Gameplay Image 3](image-4.png)
+![Gameplay Image 4](image-5.png)
+![Gameplay Image 5](image-6.png)
 
-our ball is trying to escape from the fire room through the hole to the cold outside where he belongs help him escape
-it contains 
+## About
 
-collision with the walls swipe gesture to push the ball friction   ✅
+Border Break is a simple yet engaging game developed using C++ and the Raylib library. Your goal is to guide the ball to freedom using intuitive swipe gestures.
 
-the hole is 110% of the ball size  ✅
+## Features
 
+*   **Physics-Based Gameplay:** Experience realistic ball physics with wall collisions, swipe-based pushing, and friction.
+*   **The Hole:** The escape hole is slightly larger than the ball (110% of its size) for a fair challenge.
+*   **Sound Effects:** Enjoy immersive sound effects for bouncing and winning.
+*   **Theme and Visuals:** Features a theme song, splash screen with the ball and fire, and a background image/pattern.
+*   **Score System:** Your score is calculated based on time and the number of touches. Aim for the shortest time and fewest touches for the highest score!
+*   **Multiple Levels:** Includes 2 different levels to test your skills.
+*   **Random Hole Placement:** The hole's location changes each time you play.
+*   **Sound Effects:** Collision and passing sound effects.
+*   **Visual Effects:** Ball appearance and lighting effects.
+*   **Ball Size:** Ball diameter changes based on level complexity.
 
-sound effect for bouncing and winngin  ✅
+## Technologies Used
 
-theme song and splash start  screen  ball behind him fire  ✅
+*   C++
+*   Raylib
 
-background image or pattern ✅
+## Future Enhancements
 
-score the calculated based on time and number oftouches the user performed,
-<!-- score based on number of collisions : score start from 100 and decrease with the no. of bounces -->shortest time and lowest touch
-counts gives higher score.
+*   Fine-tune hole tolerance.
+*   Explore how device orientation can influence the game.
+```
 
-2 different levels  ✅
-
-the hole  placment is random each time.✅
-
-
-
-Sound effects related to ball collision and passing
-through.✅
- Visual effects related to ball appearance and lighting❌
-effect
-
-
-
-fix hole big tolerance X
-
-One ball diameters according to complexity level ✅
-
-
-
-
-Physical positioning of mobile affects the game appearance ..
