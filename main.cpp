@@ -3,6 +3,10 @@
 #include <time.h>
 #include <math.h>
 // srand(time(NULL)); // Seed with current time
+float gameStartTime = 0.0f;
+int touchCount = 0;
+bool scoreCalculated = false;
+int finalScore = 0;
 
 typedef struct Sprite
 {
@@ -204,21 +208,25 @@ void move_player(Sprite *player)
     {
         player->vel.x = 400.0;
         player->vel.y = 0;
+        touchCount++;
     }
     if (IsKeyPressed(KEY_LEFT))
     {
         player->vel.x = -400.0;
         player->vel.y = 0;
+        touchCount++;
     }
     if (IsKeyPressed(KEY_UP))
     {
         player->vel.y = -400.0;
         player->vel.x = 0;
+        touchCount++;
     }
     if (IsKeyPressed(KEY_DOWN))
     {
         player->vel.y = 400.0;
         player->vel.x = 0;
+        touchCount++;
     }
 }
 
@@ -253,6 +261,7 @@ void move_by_mouse(Sprite *player)
     if (isDragging && IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
     {
         isDragging = false;
+        touchCount++;
 
         // Calculate swipe vector
         Vector2 swipeVector = {
@@ -401,12 +410,20 @@ int main()
                 StopMusicStream(levels_screen_song); // Stop music when leaving levels screen
 
                 currentScreen = LEVEL1_SCREEN;
+                gameStartTime = GetTime(); // START TIMER
+                touchCount = 0;
+                scoreCalculated = false;
+                finalScore = 0;
             }
             else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (GetMousePosition().x >= GetScreenWidth() / 2))
 
             {
                 StopMusicStream(levels_screen_song); // Stop music when leaving levels screen
                 currentScreen = LEVEL2_SCREEN;
+                gameStartTime = GetTime(); // START TIMER
+                touchCount = 0;
+                scoreCalculated = false;
+                finalScore = 0;
             }
         }
         else if ((currentScreen == LEVEL1_SCREEN || currentScreen == LEVEL2_SCREEN) && IsKeyPressed(KEY_ENTER))
@@ -450,6 +467,16 @@ int main()
                 winMessageTimer = 0.0f;
                 PlaySound(win_level); // Add this line here
                 player.texture = tansparent_texture;
+                if (!scoreCalculated)
+                {
+                    float elapsedTime = GetTime() - gameStartTime;
+
+                    // Score: inverse relationship (lower time and fewer touches = higher score)
+                    finalScore = (int)(10000 / (elapsedTime + touchCount + 1)); // +1 to avoid divide by zero
+                    if (finalScore > 9999)
+                        finalScore = 9999;
+                    scoreCalculated = true;
+                }
             }
 
             // Update timer for win message
@@ -503,6 +530,15 @@ int main()
                 DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
 
                 DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, BLACK);
+                if (scoreCalculated)
+                {
+                    DrawText(
+                        TextFormat("Score: %d", finalScore),
+                        GetScreenWidth() / 2 - MeasureText(TextFormat("Score: %d", finalScore), 40) / 2,
+                        GetScreenHeight() / 2 + 100,
+                        40,
+                        GOLD);
+                }
 
                 // // Only show restart message if player is still on screen
                 // if (player.dest_rect.x > -player.dest_rect.width &&
@@ -527,6 +563,13 @@ int main()
                 gamewon = false;
                 showWinMessage = false;
                 winhole_drawn = false;
+                gamewon = false;
+                showWinMessage = false;
+                winMessageTimer = 0.0f;
+                gameStartTime = GetTime();
+                touchCount = 0;
+                scoreCalculated = false;
+                finalScore = 0;
             }
 
             // Draw the player
@@ -565,6 +608,16 @@ int main()
                 winMessageTimer = 0.0f;
                 PlaySound(win_level); // Add this line here
                 player.texture = tansparent_texture;
+                if (!scoreCalculated)
+                {
+                    float elapsedTime = GetTime() - gameStartTime;
+
+                    // Score: inverse relationship (lower time and fewer touches = higher score)
+                    finalScore = (int)(10000 / (elapsedTime + touchCount + 1)); // +1 to avoid divide by zero
+                    if (finalScore > 9999)
+                        finalScore = 9999;
+                    scoreCalculated = true;
+                }
             }
 
             // Update timer for win message
@@ -618,6 +671,15 @@ int main()
                 DrawText(msg, (WindowX - msgwidth) / 2, (WindowY / 2) - 100, fontsize, GREEN);
 
                 DrawText(restart_msg, (WindowX - restart_width) / 2, (WindowY / 2), small_fontsize, WHITE);
+                if (scoreCalculated)
+                {
+                    DrawText(
+                        TextFormat("Score: %d", finalScore),
+                        GetScreenWidth() / 2 - MeasureText(TextFormat("Score: %d", finalScore), 40) / 2,
+                        GetScreenHeight() / 2 + 100,
+                        40,
+                        GOLD);
+                }
 
                 // // Only show restart message if player is still on screen
                 // if (player.dest_rect.x > -player.dest_rect.width &&
@@ -642,6 +704,13 @@ int main()
                 gamewon = false;
                 showWinMessage = false;
                 winhole_drawn = false;
+                gamewon = false;
+                showWinMessage = false;
+                winMessageTimer = 0.0f;
+                gameStartTime = GetTime();
+                touchCount = 0;
+                scoreCalculated = false;
+                finalScore = 0;
             }
 
             // Draw the player
