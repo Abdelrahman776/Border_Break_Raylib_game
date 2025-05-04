@@ -1,4 +1,4 @@
-```markdown
+
 # Border Break Game
 
 Help our little ball escape the fiery room and reach the cold freedom outside!
@@ -9,7 +9,13 @@ Help our little ball escape the fiery room and reach the cold freedom outside!
 ![Gameplay Image 2](image-3.png)
 ![Gameplay Image 3](image-4.png)
 ![Gameplay Image 4](image-5.png)
+
 ![Gameplay Image 5](image-6.png)
+
+## Platforms
+
+*   Desktop
+*   Mobile (Raymob, Android Studio)
 
 ## About
 
@@ -37,5 +43,5 @@ Border Break is a simple yet engaging game developed using C++ and the Raylib li
 
 *   Fine-tune hole tolerance.
 *   Explore how device orientation can influence the game.
-```
+
 
