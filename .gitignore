@@ -1,2 +1,4 @@
 main.exe
-assets
+assets/
+
+*.exe   
