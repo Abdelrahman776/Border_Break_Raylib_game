@@ -8,11 +8,17 @@ Help our little ball escape the fiery room and reach the cold freedom outside!
 ![Gameplay Image 1](image-2.png)
 
 ![alt text](image.png)
-![Gameplay Image 2](image-3.png)
-![Gameplay Image 3](image-4.png)
-![Gameplay Image 4](image-5.png)
 
-![Gameplay Image 5](image-6.png)
+![alt text](<Screenshot (817).png>)
+
+![alt text](image-1.png)
+
+
+![alt text](image-4.png)
+
+![alt text](image-5.png)
+![alt text](image-6.png)
+
 
 ## Platforms
 
