@@ -4,7 +4,6 @@
 #include <math.h>
 
 // srand(time(NULL)); // Seed with current time
-
 float gameStartTime = 0.0f;
 int touchCount = 0;
 bool scoreCalculated = false;
@@ -16,6 +15,17 @@ typedef struct Sprite
     Rectangle dest_rect;
     Vector2 vel;
 } Sprite;
+
+typedef struct Obstacle
+{
+    Rectangle bounds;
+    Vector2 velocity;
+    bool is_deadly;
+    bool is_bouncy;
+    Color color;
+} Obstacle;
+
+#define MAX_OBSTACLES 5
 
 typedef enum GameScreen
 {
@@ -279,6 +289,47 @@ void move_by_mouse(Sprite *player)
     // apply_velocity(player);
 }
 
+void update_obstacle(Obstacle *obstacle)
+{
+    obstacle->bounds.x += obstacle->velocity.x * GetFrameTime();
+    obstacle->bounds.y += obstacle->velocity.y * GetFrameTime();
+
+    // Bounce off walls
+    if (obstacle->bounds.x <= 0 || obstacle->bounds.x + obstacle->bounds.width >= GetScreenWidth())
+    {
+        obstacle->velocity.x *= -1;
+    }
+    if (obstacle->bounds.y <= 0 || obstacle->bounds.y + obstacle->bounds.height >= GetScreenHeight())
+    {
+        obstacle->velocity.y *= -1;
+    }
+}
+
+// Update the check_obstacle_collision function
+bool check_obstacle_collision(Sprite *player, Obstacle *obstacle)
+{
+    if (CheckCollisionRecs(player->dest_rect, obstacle->bounds))
+    {
+        if (obstacle->is_deadly)
+        {
+            // Reset player position
+            player->dest_rect.x = GetScreenWidth() / 2.0f - player->dest_rect.width / 2.0f;
+            player->dest_rect.y = GetScreenHeight() / 2.0f - player->dest_rect.height / 2.0f;
+            player->vel.x = (rand() % 401) - 200;
+            player->vel.y = (rand() % 401) - 200;
+            // player->texture = angry_ball_texture; // Show angry face on deadly collision
+            return true;
+        }
+        else if (obstacle->is_bouncy)
+        {
+            // Bounce with extra force
+            player->vel.x *= -1.5f;
+            player->vel.y *= -1.5f;
+        }
+    }
+    return false;
+}
+
 Vector4 draw_winhole(float hole_length)
 {
     bool randchoice = ((rand() % 2) == 0); // rand between 0 and 1
@@ -348,7 +399,7 @@ int main()
     Music levels_screen_song = LoadMusicStream("assets/sounds/fire_sound.mp3");
     Sound hit_wall = LoadSound("assets/sounds/hit_wall.mp3");
     Sound win_level = LoadSound("assets/sounds/win_level.mp3");
-
+    Sound hurt_sound = LoadSound("assets/sounds/hurt.mp3"); // Load the new hurt sound
     Sprite player = {
         smile_ball_texture,
         {
@@ -358,10 +409,28 @@ int main()
             60.0,
         }};
 
+    bool x = false;
     // Random initial velocity between -200 to 200 for x and y
     srand(time(NULL)); // Seed the random number generator
     player.vel.x = (rand() % 401) - 200;
     player.vel.y = (rand() % 401) - 200;
+
+    // Add after player initialization
+    Obstacle obstacles[MAX_OBSTACLES];
+
+    // Initialize obstacles
+    for (int i = 0; i < MAX_OBSTACLES; i++)
+    {
+        obstacles[i].bounds.width = 40;
+        obstacles[i].bounds.height = 40;
+        obstacles[i].bounds.x = GetRandomValue(100, WindowX - 100);
+        obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
+        obstacles[i].velocity.x = GetRandomValue(-200, 200);
+        obstacles[i].velocity.y = GetRandomValue(-200, 200);
+        obstacles[i].is_deadly = (i % 2 == 0); // Alternate between deadly and bouncy
+        obstacles[i].is_bouncy = !obstacles[i].is_deadly;
+        obstacles[i].color = obstacles[i].is_deadly ? RED : YELLOW;
+    }
 
     bool winhole_drawn = false;
     Vector4 winhole = {};
@@ -514,6 +583,22 @@ int main()
             }
             DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, BLUE);
 
+            // Update and draw obstacles
+            for (int i = 0; i < MAX_OBSTACLES; i++)
+            {
+                if (!gamewon)
+                { // Only update obstacles if game isn't won
+                    update_obstacle(&obstacles[i]);
+                    if (check_obstacle_collision(&player, &obstacles[i]))
+                    {
+                        PlaySound(hurt_sound); // Play the hurt sound
+                    }
+                }
+
+                // Level 1: Rectangle obstacles
+                DrawRectangleRec(obstacles[i].bounds, obstacles[i].color);
+            }
+
             // Display win message if needed
             if (showWinMessage)
             {
@@ -552,6 +637,15 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+
+                // Reset obstacles
+                for (int i = 0; i < MAX_OBSTACLES; i++)
+                {
+                    obstacles[i].bounds.x = GetRandomValue(100, WindowX - 100);
+                    obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
+                    obstacles[i].velocity.x = GetRandomValue(-200, 200);
+                    obstacles[i].velocity.y = GetRandomValue(-200, 200);
+                }
             }
 
             // Draw the player
@@ -646,6 +740,33 @@ int main()
             }
             DrawLineEx({winhole.x, winhole.y}, {winhole.z, winhole.w}, 20, RED);
 
+            // Update and draw obstacles
+            for (int i = 0; i < MAX_OBSTACLES; i++)
+            {
+                if (!gamewon)
+                { // Only update obstacles if game isn't won
+                    update_obstacle(&obstacles[i]);
+                    x = check_obstacle_collision(&player, &obstacles[i]);
+                }
+
+                // Level 2: Circular obstacles with trail effect
+                DrawCircle(
+                    obstacles[i].bounds.x + obstacles[i].bounds.width / 2,
+                    obstacles[i].bounds.y + obstacles[i].bounds.height / 2,
+                    obstacles[i].bounds.width / 2,
+                    obstacles[i].color);
+
+                // Draw trail effect
+                for (int j = 1; j <= 3; j++)
+                {
+                    DrawCircle(
+                        obstacles[i].bounds.x + obstacles[i].bounds.width / 2 - obstacles[i].velocity.x * GetFrameTime() * j,
+                        obstacles[i].bounds.y + obstacles[i].bounds.height / 2 - obstacles[i].velocity.y * GetFrameTime() * j,
+                        obstacles[i].bounds.width / 2 * (1.0f - j * 0.2f),
+                        Fade(obstacles[i].color, 0.5f - j * 0.1f));
+                }
+            }
+
             // Display win message if needed
             if (showWinMessage)
             {
@@ -685,6 +806,15 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+
+                // Reset obstacles
+                for (int i = 0; i < MAX_OBSTACLES; i++)
+                {
+                    obstacles[i].bounds.x = GetRandomValue(100, WindowX - 100);
+                    obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
+                    obstacles[i].velocity.x = GetRandomValue(-200, 200);
+                    obstacles[i].velocity.y = GetRandomValue(-200, 200);
+                }
             }
 
             // Draw the player
@@ -696,21 +826,77 @@ int main()
             break;
         }
 
-        if (IsKeyPressed(KEY_BACK) || IsKeyPressed(KEY_SPACE))
+        if (IsKeyPressed(KEY_BACK))
         {
             currentScreen = START_SCREEN;
+            // Reset the game
+            player.vel.x = (rand() % 401) - 200; // random from -200 to 200
+            player.vel.y = (rand() % 401) - 200;
+            player.dest_rect.x = WindowX / 2.0f - 30.0f;
+            player.dest_rect.y = WindowY / 2.0f - 30.0f;
+
+            // Reset game state
+            gamewon = false;
+            showWinMessage = false;
+            winhole_drawn = false;
+            gamewon = false;
+            showWinMessage = false;
+            winMessageTimer = 0.0f;
+            gameStartTime = GetTime();
+            touchCount = 0;
+            scoreCalculated = false;
+            finalScore = 0;
+
+            // Reset obstacles
+            for (int i = 0; i < MAX_OBSTACLES; i++)
+            {
+                obstacles[i].bounds.x = GetRandomValue(100, WindowX - 100);
+                obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
+                obstacles[i].velocity.x = GetRandomValue(-200, 200);
+                obstacles[i].velocity.y = GetRandomValue(-200, 200);
+            }
+        }
+
+        if (x)
+        {
+            PlaySound(hurt_sound); // Play the hurt sound
+            x = false;
         }
         int gesture = GetGestureDetected();
         if (gesture == GESTURE_DOUBLETAP)
         {
 
             currentScreen = SELECT_LEVEL_SCREEN;
+            // Reset the game
+            player.vel.x = (rand() % 401) - 200; // random from -200 to 200
+            player.vel.y = (rand() % 401) - 200;
+            player.dest_rect.x = WindowX / 2.0f - 30.0f;
+            player.dest_rect.y = WindowY / 2.0f - 30.0f;
+
+            // Reset game state
+            gamewon = false;
+            showWinMessage = false;
+            winhole_drawn = false;
+            gamewon = false;
+            showWinMessage = false;
+            winMessageTimer = 0.0f;
+            gameStartTime = GetTime();
+            touchCount = 0;
+            scoreCalculated = false;
+            finalScore = 0;
+
+            // Reset obstacles
+            for (int i = 0; i < MAX_OBSTACLES; i++)
+            {
+                obstacles[i].bounds.x = GetRandomValue(100, WindowX - 100);
+                obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
+                obstacles[i].velocity.x = GetRandomValue(-200, 200);
+                obstacles[i].velocity.y = GetRandomValue(-200, 200);
+            }
         }
 
-        
-
-            EndDrawing();
-        }
+        EndDrawing();
+    }
 
     UnloadTexture(smile_ball_texture);
     UnloadTexture(angry_ball_texture);
@@ -722,6 +908,7 @@ int main()
     UnloadMusicStream(start_screen_song);
     UnloadSound(hit_wall);
     UnloadSound(win_level);
+    UnloadSound(hurt_sound); // Unload the hurt sound
 
     CloseWindow(); // close app
 

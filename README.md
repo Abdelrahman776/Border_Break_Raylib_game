@@ -35,7 +35,10 @@ Border Break is a simple yet engaging game developed using C++ and the Raylib li
 *   **Sound Effects:** Collision and passing sound effects.
 *   **Visual Effects:** Ball appearance and lighting effects.
 *   **Ball Size:** Ball diameter changes based on level complexity.
-
+*   **Obstacles and Moving Barriers:** Ball diameter changes based on level complexity.
+*   **Ball Size:** Ball diameter changes based on level complexity.
+*   **Achievement System:** Ball diameter changes based on level complexity.
+Multiple Ball Skins with Special Effects
 ## Technologies Used
 
 *   C++
