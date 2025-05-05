@@ -25,7 +25,23 @@ typedef struct Obstacle
     Color color;
 } Obstacle;
 
+typedef struct Achievement
+{
+    const char *name;
+    const char *description;
+    bool unlocked;
+    Color color;
+} Achievement;
+
 #define MAX_OBSTACLES 5
+#define MAX_ACHIEVEMENTS 3
+
+Achievement achievements[MAX_ACHIEVEMENTS] = {
+    {"Speed Runner", "Complete level in under 10 seconds", false, GREEN},
+    {"Perfect Exit", "Exit through hole with score above 5000", false, GOLD},
+    {"Obstacle Master", "Avoid all deadly obstacles", false, PURPLE}};
+
+bool hasAvoidedDeadlyObstacles = true; // Track if player has hit any deadly obstacles
 
 typedef enum GameScreen
 {
@@ -317,7 +333,7 @@ bool check_obstacle_collision(Sprite *player, Obstacle *obstacle)
             player->dest_rect.y = GetScreenHeight() / 2.0f - player->dest_rect.height / 2.0f;
             player->vel.x = (rand() % 401) - 200;
             player->vel.y = (rand() % 401) - 200;
-            // player->texture = angry_ball_texture; // Show angry face on deadly collision
+            hasAvoidedDeadlyObstacles = false; // Player hit a deadly obstacle
             return true;
         }
         else if (obstacle->is_bouncy)
@@ -375,6 +391,43 @@ Vector4 draw_winhole(float hole_length)
     }
     Vector4 startendpoint = {startpoint.x, startpoint.y, endpoint.x, endpoint.y};
     return startendpoint;
+}
+
+void updateAchievements(float gameTime, int score, bool hasAvoidedDeadlyObstacles)
+{
+    // Speed Runner achievement
+    if (gameTime <= 10.0f)
+    {
+        achievements[0].unlocked = true;
+    }
+
+    // Perfect Exit achievement
+    if (score >= 5000)
+    {
+        achievements[1].unlocked = true;
+    }
+
+    // Obstacle Master achievement
+    if (hasAvoidedDeadlyObstacles)
+    {
+        achievements[2].unlocked = true;
+    }
+}
+
+void drawAchievements(int startX, int startY)
+{
+    for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+    {
+        const char *status = achievements[i].unlocked ? "✓" : "×";
+        Color statusColor = achievements[i].unlocked ? GREEN : RED;
+
+        // Draw achievement box
+        DrawRectangle(startX, startY + i * 30, 300, 25, Fade(DARKGRAY, 0.5f));
+
+        // Draw achievement name and description
+        DrawText(TextFormat("%s %s", status, achievements[i].name),
+                 startX + 5, startY + i * 30 + 5, 20, statusColor);
+    }
 }
 
 int main()
@@ -474,6 +527,11 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+                hasAvoidedDeadlyObstacles = true;
+                for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+                {
+                    achievements[i].unlocked = false;
+                }
             }
             else if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && (GetMousePosition().x >= GetScreenWidth() / 2))
 
@@ -484,6 +542,11 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+                hasAvoidedDeadlyObstacles = true;
+                for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+                {
+                    achievements[i].unlocked = false;
+                }
             }
         }
         else if ((currentScreen == LEVEL1_SCREEN || currentScreen == LEVEL2_SCREEN) && IsKeyPressed(KEY_ENTER))
@@ -536,6 +599,8 @@ int main()
                     if (finalScore > 9999)
                         finalScore = 9999;
                     scoreCalculated = true;
+
+                    updateAchievements(elapsedTime, finalScore, hasAvoidedDeadlyObstacles);
                 }
             }
 
@@ -613,9 +678,15 @@ int main()
                         40,
                         GOLD);
                 }
+
+                // Display unlocked achievements
+                drawAchievements(20, 100);
             }
             // Display score during the game
             DrawText(TextFormat("Score: %d", finalScore), 20, 20, 30, BLACK);
+
+            // Display achievements
+            drawAchievements(GetScreenWidth() - 320, 20);
 
             // Handle restart with space key
             if (IsKeyPressed(KEY_SPACE))
@@ -637,6 +708,7 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+                hasAvoidedDeadlyObstacles = true; // Reset deadly obstacle tracking
 
                 // Reset obstacles
                 for (int i = 0; i < MAX_OBSTACLES; i++)
@@ -645,6 +717,12 @@ int main()
                     obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
                     obstacles[i].velocity.x = GetRandomValue(-200, 200);
                     obstacles[i].velocity.y = GetRandomValue(-200, 200);
+                }
+
+                // Reset achievements
+                for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+                {
+                    achievements[i].unlocked = false;
                 }
             }
 
@@ -693,6 +771,8 @@ int main()
                     if (finalScore > 9999)
                         finalScore = 9999;
                     scoreCalculated = true;
+
+                    updateAchievements(elapsedTime, finalScore, hasAvoidedDeadlyObstacles);
                 }
             }
 
@@ -782,9 +862,15 @@ int main()
                         40,
                         GOLD);
                 }
+
+                // Display unlocked achievements
+                drawAchievements(20, 100);
             }
             // Display score during the game
             DrawText(TextFormat("Score: %d", finalScore), 20, 20, 30, WHITE);
+
+            // Display achievements
+            drawAchievements(GetScreenWidth() - 320, 20);
 
             // Handle restart with space key
             if (IsKeyPressed(KEY_SPACE))
@@ -806,6 +892,7 @@ int main()
                 touchCount = 0;
                 scoreCalculated = false;
                 finalScore = 0;
+                hasAvoidedDeadlyObstacles = true; // Reset deadly obstacle tracking
 
                 // Reset obstacles
                 for (int i = 0; i < MAX_OBSTACLES; i++)
@@ -814,6 +901,12 @@ int main()
                     obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
                     obstacles[i].velocity.x = GetRandomValue(-200, 200);
                     obstacles[i].velocity.y = GetRandomValue(-200, 200);
+                }
+
+                // Reset achievements
+                for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+                {
+                    achievements[i].unlocked = false;
                 }
             }
 
@@ -846,6 +939,7 @@ int main()
             touchCount = 0;
             scoreCalculated = false;
             finalScore = 0;
+            hasAvoidedDeadlyObstacles = true; // Reset deadly obstacle tracking
 
             // Reset obstacles
             for (int i = 0; i < MAX_OBSTACLES; i++)
@@ -854,6 +948,12 @@ int main()
                 obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
                 obstacles[i].velocity.x = GetRandomValue(-200, 200);
                 obstacles[i].velocity.y = GetRandomValue(-200, 200);
+            }
+
+            // Reset achievements
+            for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+            {
+                achievements[i].unlocked = false;
             }
         }
 
@@ -884,6 +984,7 @@ int main()
             touchCount = 0;
             scoreCalculated = false;
             finalScore = 0;
+            hasAvoidedDeadlyObstacles = true; // Reset deadly obstacle tracking
 
             // Reset obstacles
             for (int i = 0; i < MAX_OBSTACLES; i++)
@@ -892,6 +993,12 @@ int main()
                 obstacles[i].bounds.y = GetRandomValue(100, WindowY - 100);
                 obstacles[i].velocity.x = GetRandomValue(-200, 200);
                 obstacles[i].velocity.y = GetRandomValue(-200, 200);
+            }
+
+            // Reset achievements
+            for (int i = 0; i < MAX_ACHIEVEMENTS; i++)
+            {
+                achievements[i].unlocked = false;
             }
         }
 
